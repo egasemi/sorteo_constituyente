@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo en Cascada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-5xl mx-auto">
+        <!-- Configuración -->
+        <div id="configuracion" class="space-y-6">
+            
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 hidden">
+                <!-- Núcleos 1-4 -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-lg font-bold text-red-500 mb-4">Protección y promoción del desarrollo humano</h2>
+                    <input type="text" id="rango1" placeholder="1-15" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg mb-3" value="1-35">
+                    <input type="number" id="cantidad1" min="1" value="3" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg">
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-lg font-bold text-red-500 mb-4">Cuidado de los bienes comunes y desarrollo equilibrado del territorio</h2>
+                    <input type="text" id="rango2" placeholder="1-15" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg mb-3" value="36-45">
+                    <input type="number" id="cantidad2" min="1" value="2" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg">
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-lg font-bold text-red-500 mb-4">Municipalismo, autonomía y federalismo</h2>
+                    <input type="text" id="rango3" placeholder="1-15" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg mb-3" value="51-65">
+                    <input type="number" id="cantidad3" min="1" value="2" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg">
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-lg font-bold text-red-500 mb-4">Reforma política y ampliación de la democracia</h2>
+                    <input type="text" id="rango4" placeholder="1-15" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg mb-3" value="66-74">
+                    <input type="number" id="cantidad4" min="1" value="2" 
+                           class="w-full p-3 border-2 border-gray-200 rounded-lg">
+                </div>
+                <!-- Repetir para Núcleos 2-4 -->
+            </div>
+            
+            <button onclick="iniciarSorteo()" 
+                    class="w-full py-4 bg-emerald-500 text-white text-xl font-bold rounded-xl hover:bg-emerald-600 transition-all">
+                INICIAR SORTEO
+            </button>
+        </div>
+
+        <!-- Contenedor de progreso -->
+        <div id="progreso" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <!-- Resultados Finales -->
+        <div id="resultado" class="hidden space-y-8">
+            <!--button onclick="reiniciarSorteo()" 
+                    class="w-full py-4 bg-blue-500 text-white text-xl font-bold rounded-xl hover:bg-blue-600 transition-all">
+                REINICIAR
+            </button-->
+        </div>
+    </div>
+
+<script>
+    const nucleosConfig = [];
+    let currentNucleoIndex = 0;
+    const titulosNucleos = [
+        "Protección y promoción del desarrollo humano",
+        "Cuidado de los bienes comunes y desarrollo equilibrado del territorio",
+        "Municipalismo, autonomía y federalismo",
+        "Reforma política y ampliación de la democracia"
+        ];
+
+    async function crearSeccionNucleo(nucleoIndex) {
+        const contenedor = document.getElementById('progreso');
+        
+        const seccion = document.createElement('div');
+        seccion.className = 'bg-white p-6 rounded-xl shadow-lg space-y-4 h-[250px]';
+        seccion.innerHTML = `
+            <h2 class="text-2xl font-bold text-[#42AAF5]">${titulosNucleos[nucleoIndex]}</h2>
+            <div class="numeros-container flex flex-wrap gap-4"></div>
+        `;
+
+        contenedor.appendChild(seccion);
+        return seccion.querySelector('.numeros-container');
+    }
+
+    async function animarNumero(contenedor, numero) {
+        const numeroElement = document.createElement('div');
+        numeroElement.className = 'numero-item bg-[#FF4956] px-4 py-2 rounded-lg animate-pulse text-3xl text-sky-50';
+        numeroElement.textContent = '??';
+        contenedor.appendChild(numeroElement);
+
+        return new Promise(resolve => {
+            gsap.to(numeroElement, {
+                innerText: numero,
+                duration: 1.2,
+                snap: { innerText: 1 },
+                ease: "power4.out",
+                onUpdate: () => {
+                    numeroElement.textContent = Math.floor(numeroElement.innerText);
+                },
+                onComplete: () => {
+                    numeroElement.classList.remove('animate-pulse');
+                    numeroElement.classList.add('bg-[#FF4956]');
+                    resolve();
+                }
+            });
+        });
+    }
+
+    async function sortearNucleo(nucleoIndex) {
+        const { mesas, cantidad } = nucleosConfig[nucleoIndex];
+        const numerosContainer = await crearSeccionNucleo(nucleoIndex);
+        const sorteadas = [];
+        
+        for(let i = 0; i < cantidad; i++) {
+            const indice = Math.floor(Math.random() * mesas.length);
+            const numero = mesas.splice(indice, 1)[0];
+            sorteadas.push(numero);
+            await animarNumero(numerosContainer, numero);
+            await new Promise(r => setTimeout(r, 500));
+        }
+        
+        return sorteadas;
+    }
+
+    async function iniciarSorteo() {
+        // Inicialización
+        document.getElementById('configuracion').classList.add('hidden');
+        document.getElementById('resultado').classList.add('hidden');
+        document.getElementById('progreso').classList.remove('hidden');
+        document.getElementById('progreso').innerHTML = '';
+        
+        // Cargar configuración
+        nucleosConfig.length = 0;
+        for(let i = 1; i <= 4; i++) {
+            const [inicio, fin] = document.getElementById(`rango${i}`).value.split('-').map(Number);
+            const cantidad = parseInt(document.getElementById(`cantidad${i}`).value);
+            nucleosConfig.push({
+                mesas: Array.from({length: fin - inicio + 1}, (_, idx) => inicio + idx),
+                cantidad: cantidad
+            });
+        }
+
+        // Proceso de sorteo
+        const resultados = [];
+        for(currentNucleoIndex = 0; currentNucleoIndex < 4; currentNucleoIndex++) {
+            resultados.push(await sortearNucleo(currentNucleoIndex));
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        // Mostrar botón de reinicio
+        document.getElementById('resultado').classList.remove('hidden');
+    }
+
+    function reiniciarSorteo() {
+        document.getElementById('progreso').innerHTML = '';
+        document.getElementById('resultado').classList.add('hidden');
+        document.getElementById('configuracion').classList.remove('hidden');
+    }
+
+</script>
+
+<style>
+/*     @import "tailwind";
+    @theme {
+        --color-sky: #42AAF5;
+        --color-red: #3ab7bf;
+    } */
+
+    .numero-item {
+        transition: all 0.3s ease;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .animate-pulse {
+        animation: pulse 1.5s infinite;
+    }
+</style>
+</body>
+</html>
